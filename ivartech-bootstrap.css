@@ -1,5 +1,5 @@
 /*
- *  IVARTECH-BOOTSTRAP CSS
+ *	IVARTECH-BOOTSTRAP CSS
  *	in combination with ivatech-bootstrap.js and jquery should give an easy to 
  *	use flexible html gui widget and layout bootstrap
  *
@@ -62,7 +62,7 @@ hr {
 	border-color: #f1f1f1;
 }
 
-.input-wrapper {
+.input-field {
 	padding-bottom: 10px;
 	margin-left: 10px;
 }
@@ -95,7 +95,7 @@ textarea {
 	padding-top: 4px;
 }
 
-.textarea .input-info-wrapper {
+.textarea .input-info{
 	vertical-align: top;
 	padding-top: 4px;
 }
