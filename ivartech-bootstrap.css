@@ -8,6 +8,26 @@
  *	@since May 2013.
  */
  
+ 
+ /*
+ INPUT FIELD EXAMPLE
+ 
+ <div class="input-field">
+	<label class="input-label" for="email">E-mail: </label> 
+	<input id="email" name="email" type="text" />
+	<span class="input-info">
+		<i class="i16 error" title="Error description" >&times;</i>
+		<i class="i16 valid" title="Valid description" >&#x2713;</i>
+		<i class="i16 info" title="Info description" >i</i>
+		<i class="i16 tip" title="Tip description" >?</i>
+		<i class="i16 load" title="Loading..." ></i>
+		<span class="message"></span>
+	</span>
+</div>
+ 
+ 
+ */
+ 
 body {
 	color: #333;
 	font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -67,14 +87,15 @@ hr {
 	margin-left: 10px;
 }
 
+.input-field label .mandatory {
+	color: #c40000;
+}
+
 label {
 	display: inline-block;
 	width: 90px;
 	vertical-align: middle;
-}
-
-.error label {
-	color: #c40000;
+	color: #555;
 }
 
 input[type="text"],input[type="password"],textarea {
@@ -114,25 +135,26 @@ input[type="text"]:focus,input[type="password"]:focus, textarea:focus {
 	border: solid 1px #c40000;
 }
 
-.valid input[type="text"],.valid input[type="password"], .valid textarea {
-	border: solid 1px #5db300;
-}
-
 .button {
 	display: inline-block;
 	cursor: pointer;
 	text-align: center;
 	padding: 5px 10px;
-	border: 1px solid #fff;
+	border: 1px solid #007eff;
 	background: #007eff;
 	font-size: 18px;
 	color: #fff;
 }
 
 .button:hover {
-	border-color: #ccc;
-	color: #555;
-	background: transparent;
+	border-color: #3197ff;
+	background: #3197ff;
+	text-decoration: none;
+}
+
+.button:active {
+	border-color: #fff;
+	background: #0067d1;
 	text-decoration: none;
 }
 
@@ -154,6 +176,10 @@ input[type="text"]:focus,input[type="password"]:focus, textarea:focus {
 
 .valid .input-info {
 	color: #5db300;
+}
+
+.warn .input-info {
+	color: #ff9000;
 }
 
 .input-info i {
@@ -183,6 +209,10 @@ input[type="text"]:focus,input[type="password"]:focus, textarea:focus {
 	background-color: #5db300;
 }
 
+.input-info i.warn {
+	background-color: #ff9000;
+}
+
 .input-info i.load {
 	background: #fff url(style-images/input-loader.gif) no-repeat center center;
 }
@@ -204,5 +234,13 @@ input[type="text"]:focus,input[type="password"]:focus, textarea:focus {
 }
 
 .load .input-info i.load {
+	display: inline-block;
+}
+
+.tip .input-info i.tip {
+	display: inline-block;
+}
+
+.warn .input-info i.warn {
 	display: inline-block;
 }
