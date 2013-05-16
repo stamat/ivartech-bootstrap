@@ -9,7 +9,8 @@
 ivar.formAgregator = {};
 
 $(document).ready(function() {
-  initInputs($('.ivartech-input'));
+	console.log(validate.email('markobre1@a.gmail.info'));
+	initInputs($('.ivartech-input'));
 });
 
 
@@ -21,11 +22,12 @@ function InputField(o) {
 	this.max = null;
 	this.regex = null;
 	this.mandatory = false;
+	this.skip_validation = false;
 	this.form = null;
 	this.valfn = null;
 	this.classes = '';
 	this.info_msg = null;
-	this.notvalid_msg = null;
+	this.error_msg = null;
 	this.valid_msg = null;
 	this.tip_msg = null;
 	
@@ -63,20 +65,9 @@ InputField.prototype.validate = function() {
 	
 	if(this.valfn !== null)	
 	for(var i = 0; i < this.valfn.length; i++) {
-		var parts = this.valfn[i].split('.');
-		var current = window;
-		for(var j = 0; j < parts.length; j++) {
-			if(current.hasOwnProperty(parts[j]))
-				current = current[parts[j]];
-			else
-				break;
+		if(!this.valfn[i](value)) {
+			return false;
 		}
-		
-		if(isFunction(current)) {
-			if(!current(value)) {
-				return false;
-			}
-		}	
 	}
 	
 	return true;
@@ -84,13 +75,28 @@ InputField.prototype.validate = function() {
 
 InputField.prototype.setState = function(state, title, message) {
 	this.elem.attr('class', this.classes);
-	this.elem.addClass(state);
-	if(title !== undefined)
-		this.elem.find('.'+state).attr('title', title);
-	if(message !== undefined)
-		this.elem.find('.message').html(message);
+	if(state)
+		this.elem.addClass(state);
+	if(title)
+		this.setStateTitle(state, title);
+	if(message)
+		this.setStateMessage(message);
 	else
-		this.elem.find('.message').html('');
+		this.setStateMessage('');
+};
+
+InputField.prototype.setStateTitle = function(state, title) {
+	this.elem.find('.'+state).attr('title', title);
+};
+
+InputField.prototype.setStateMessage = function(message) {
+	this.elem.find('.message').html(message);
+};
+
+InputField.prototype.buildState = function(elem, state) {
+	var attrName = state+'_msg';
+	attrToObjProp(this, elem, attrName);
+	this.setStateTitle(state, this[attrName]);
 };
 
 function attrToObjProp(obj, elem, attrName) {
@@ -98,6 +104,34 @@ function attrToObjProp(obj, elem, attrName) {
 		obj[attrName] = elem.attr(attrName);
 		elem.removeAttr(attrName);
 	}
+};
+
+function buildFunctionList(str, delimiter) {
+	if(delimiter === undefined)
+		delimiter = ' ';
+	var fns = str.split(delimiter);
+	var res = [];
+	for(var i = 0; i < fns.length; i++) {
+		var parts = fns[i].split('.');
+		var current = window;
+		for(var j = 0; j < parts.length; j++) {
+			if(current.hasOwnProperty(parts[j]))
+				current = current[parts[j]];
+			else
+				break;
+		}
+
+		if(isFunction(current))
+			res.push(current);
+	}
+	
+	return res;
+};
+
+var validate = {};
+
+validate.email = function(val) {
+	return /^[a-z0-9\._\-]*@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
 }
 
 function initInputs(elems) {
@@ -146,14 +180,19 @@ function initInputs(elems) {
 		}
 		
 		if(tmp.attr('valfn')) {
-			ifield.valfn = tmp.attr('valfn').split(' ');
+			var fns = tmp.attr('valfn');
+			ifield.valfn = buildFunctionList(fns);
 			tmp.removeAttr('valfn');
 		}
 		
-		attrToObjProp(ifield, tmp, 'info_msg');
-		attrToObjProp(ifield, tmp, 'tip_msg');
-		attrToObjProp(ifield, tmp, 'notvalid_msg');
-		attrToObjProp(ifield, tmp, 'valid_msg');
+		ifield.buildState(tmp, 'info');
+		ifield.buildState(tmp, 'tip');
+		ifield.buildState(tmp, 'error');
+		ifield.buildState(tmp, 'valid');
+		ifield.buildState(tmp, 'load');
+		ifield.buildState(tmp, 'warn');
+
+		attrToObjProp(ifield, tmp, 'skip_validation');
 		
 		
 		if(ifield.tip_msg !== null)
@@ -169,19 +208,39 @@ function initInputs(elems) {
 		}
 		
 		tmp.data('ivartech-input', ifield);
-		tmp.blur(function(e){
-			var ifield = $(this).data('ivartech-input');
-			
-			console.log(ifield.validate());
-			if(ifield.validate()) {
-				ifield.setState('valid', ifield.valid_msg);
-			} else {
-				ifield.setState('error', ifield.notvalid_msg);
-			}
+		
+		tmp.blur(function(e) {
+			fieldBlur(this, e);
+		});
+		
+		tmp.focus(function(e) {
+			fieldFocus(this, e);
 		});
 		
 		$(elems[i]).replaceWith(template);
 	}
-	
-	console.log(ivar.formAgregator);
 };
+
+function fieldFocus(elem, e) {
+	var ifield = $(elem).data('ivartech-input');
+	if(!ifield.skipvalidation)
+		if(ifield.tip_msg !== null)
+			ifield.setState('tip', ifield.tip_msg);
+		else
+			ifield.setState();
+}
+
+function fieldBlur(elem, e) {
+	var ifield = $(elem).data('ivartech-input');	
+	if(!ifield.skip_validation)
+		if(ifield.validate()) {
+			if(!ifield.mandatory && ifield.field.val().length === 0 ) {
+				if(ifield.tip_msg !== null)
+					ifield.setState('tip');
+			} else {
+				ifield.setState('valid');
+			}
+		} else {
+			ifield.setState('error');
+		}
+}
