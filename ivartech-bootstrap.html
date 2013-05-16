@@ -1,15 +1,34 @@
-<input id="test" type="text" class="ivartech-input" label="Test:" data="float" min=3 max=6 valid_msg="Bravo fegetu!" notvalid_msg="Unos mora imati od 3 do 6 karaktera moronu!" tip_msg="Neka informacija" regex="" />
+<div id="main" class="clearfix"><!-- main start -->
+			<form class="login">
+				<input id="test" type="text" class="ivartech-input" label="Test:" data="int" min=6 max=6 valid_msg="Bravo fegetu!" error_msg="Unos mora imati od 3 do 6 karaktera moronu!" tip_msg="Neka informacija" regex="" mandatory="true" default_state="warn" />
 
-<div id="ivartech-templates" style="display:none;">
-  	<div class="input-field">
+				<input id="email" name="email" type="text" class="ivartech-input" label="E-mail:" form="login" valfn="validate.email" />
+				<input id="password" name="password" type="password" class="ivartech-input" label="Password:" form="login" />
+				
+				<hr />
+				<div class="captcha clearfix">
+					<div class="captcha-wrapper">
+							<img class="image" src="Pages/captchino/captchino.php" />	
+					</div>
+					<input type="text" name="captcha" id="captcha" class="ivartech-input" label="Text from image: " form="login" skip_validation="true" />
+				</div>
+				<a id="register" class="button"><i></i><span>Register</span></a>
+				<a id="login" class="button"><i></i><span>Login</span></a>
+			</form>
+		</div><!-- main end -->
+
+	</div><!-- end of #container -->
+	<div id="ivartech-templates" style="display:none;">
+		<div class="input-field">
 			<label class="input-label" for=""></label> 
 			<input id="input-field-template" name="" type="text" />
 			<span class="input-info">
-				<i class="i16 error" title="Error description" >&times;</i>
-				<i class="i16 valid" title="Valid description" >&#x2713;</i>
-				<i class="i16 info" title="Info description" >i</i>
-				<i class="i16 tip" title="Tip description" >?</i>
-				<i class="i16 load" title="Loading..." ></i>
+				<i class="i16 error" title="" >&times;</i>
+				<i class="i16 valid" title="" >&#x2713;</i>
+				<i class="i16 info" title="" >i</i>
+				<i class="i16 warn" title="" >!</i>
+				<i class="i16 tip" title="" >?</i>
+				<i class="i16 load" title="" ></i>
 				<span class="message"></span>
 			</span>
 		</div>
