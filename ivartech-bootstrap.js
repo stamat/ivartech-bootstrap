@@ -30,6 +30,7 @@ function InputField(o) {
 	this.error_msg = null;
 	this.valid_msg = null;
 	this.tip_msg = null;
+	this.default_state = null;
 	
 	if(o !== undefined)
 		ivar.extend(this, o);
@@ -93,6 +94,13 @@ InputField.prototype.setStateMessage = function(message) {
 	this.elem.find('.message').html(message);
 };
 
+InputField.prototype.setDefaultState = function() {
+	if(this.default_state !== null)
+		this.setState(this.default_state);
+	else
+		this.setState();
+}
+
 InputField.prototype.buildState = function(elem, state) {
 	var attrName = state+'_msg';
 	attrToObjProp(this, elem, attrName);
@@ -131,7 +139,7 @@ function buildFunctionList(str, delimiter) {
 var validate = {};
 
 validate.email = function(val) {
-	return /^[a-z0-9\._\-]*@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
+	return /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
 }
 
 function initInputs(elems) {
@@ -162,6 +170,8 @@ function initInputs(elems) {
 		}
 		
 		attrToObjProp(ifield, tmp, 'data'); //int, float, string, date?
+		
+		attrToObjProp(ifield, tmp, 'default_state');
 		
 		if(tmp.attr('min')) {
 			ifield.min = parseInt(tmp.attr('min'), 10);
@@ -194,9 +204,7 @@ function initInputs(elems) {
 
 		attrToObjProp(ifield, tmp, 'skip_validation');
 		
-		
-		if(ifield.tip_msg !== null)
-			ifield.setState('tip', ifield.tip_msg);
+		ifield.setDefaultState();
 		
 		if(tmp.attr('form')) {
 			ifield.form = tmp.attr('form');
@@ -224,8 +232,8 @@ function initInputs(elems) {
 function fieldFocus(elem, e) {
 	var ifield = $(elem).data('ivartech-input');
 	if(!ifield.skipvalidation)
-		if(ifield.tip_msg !== null)
-			ifield.setState('tip', ifield.tip_msg);
+		if(ifield.default_state !== null)
+			ifield.setState(ifield.default_state);
 		else
 			ifield.setState();
 }
