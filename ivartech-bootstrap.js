@@ -51,12 +51,12 @@ InputField.prototype.validate = function() {
 	if(this.regex !== null && !this.regex.test(value))
 		return false;
 		
-	if(value.length !== 0)
+	if(value.length > 0)
 	if(this.data === 'int' && /\D/.test(value)) {
 		return false;
 	}
 	
-	if(value.length !== 0 && !/\d/.test(value)) // LOL this shit aint working
+	if(value.length > 0 && !/^\d*$/.test(value))
 	if(this.data === 'float' && !/^\d+\.\d+$/.test(value)) {
 		return false;
 	}
