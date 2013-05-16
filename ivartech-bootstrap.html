@@ -10,7 +10,7 @@
 					<div class="captcha-wrapper">
 							<img class="image" src="Pages/captchino/captchino.php" />	
 					</div>
-					<input type="text" name="captcha" id="captcha" class="ivartech-input" label="Text from image: " form="login" skip_validation="true" />
+					<input type="text" name="captcha" id="captcha" class="ivartech-input" label="Text from image: " form="login" regex="^[a-z0-9]{5}$ i" error_msg="Captcha is consisted out of 5 alphanumerical characters. Case insensitive." />
 				</div>
 				<a id="register" class="button"><i></i><span>Register</span></a>
 				<a id="login" class="button"><i></i><span>Login</span></a>
