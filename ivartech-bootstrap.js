@@ -15,21 +15,25 @@ $(document).ready(function() {
 
 
 function InputField(o) {
-	this.data = 'string';
 	this.elem = null;
 	this.field = null;
+	
+	this.data = 'string';
 	this.min = 0;
 	this.max = null;
 	this.regex = null;
 	this.mandatory = false;
+	
 	this.skip_validation = false;
 	this.form = null;
 	this.valfn = null;
 	this.classes = '';
+	
 	this.info_msg = null;
 	this.error_msg = null;
 	this.valid_msg = null;
 	this.tip_msg = null;
+	
 	this.default_state = null;
 	
 	if(o !== undefined)
@@ -232,10 +236,7 @@ function initInputs(elems) {
 function fieldFocus(elem, e) {
 	var ifield = $(elem).data('ivartech-input');
 	if(!ifield.skipvalidation)
-		if(ifield.default_state !== null)
-			ifield.setState(ifield.default_state);
-		else
-			ifield.setState();
+		ifield.setDefaultState();
 }
 
 function fieldBlur(elem, e) {
@@ -243,8 +244,7 @@ function fieldBlur(elem, e) {
 	if(!ifield.skip_validation)
 		if(ifield.validate()) {
 			if(!ifield.mandatory && ifield.field.val().length === 0 ) {
-				if(ifield.tip_msg !== null)
-					ifield.setState('tip');
+				ifield.setDefaultState();
 			} else {
 				ifield.setState('valid');
 			}
