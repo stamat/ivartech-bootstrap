@@ -12,7 +12,7 @@ $(document).ready(function() {
 	console.log(validate.email('markobre1@a.gmail.info'));
 	initInputs($('.ivartech-input'));
 	
-	console.log(new Input());
+	validators.regex('','/ab+c/');
 });
 
 var schema = {
@@ -149,6 +149,84 @@ Input.prototype.buildActionHandlerSlots = function(action_names) {
 		}
 	});
 }
+
+//int,float,array,string,bool
+var numberSchema = {
+		'min': {
+			value: 0,
+			exclusive: false
+		},
+		'max': {
+			value: null,
+			exclusive: false
+		},
+		'regex': null, //sting,int,float
+		'required': false,
+
+		//---- other ---//
+		'default': null,
+		'format': '', //string
+		'unique': false, //array
+		'enum': ['happyness', 'joy', '1.34'],
+		'devisableBy': null //number
+}
+
+function validateNumber(value, schema) {
+	
+}
+
+var validators = {};
+
+validators['enum'] = function(value, enumobj) {
+	if(ivar.isNumber(value))
+		value = value.toString();
+	return enumobj.hasOwnProperty(value);
+};
+
+validators.min = function(value, min) {
+	min = validators.buildRangeObj(min);
+	return min.exclusive?min.value>value:min.value>=value; 
+};
+
+validators.max = function(value, max) {
+	max = validators.buildRangeObj(max);
+	return max.exclusive?max.value<value:max.value<=value; 
+};
+
+validators.regex = function(value, regex) {
+	var li = regex.lastIndexOf('/');
+	var patt = regex.substring(regex.indexOf('/')+1, li);
+	var opt = regex.substring(li+1, regex.length);
+	var re = new RegExp(patt, opt);
+	return re.test(value);
+}
+
+validators.format = {}; //date-time YYYY-MM-DDThh:mm:ssZ, date YYYY-MM-DD, time hh:mm:ss, utc-milisec, regex, color, style, phone E.123, uri, url, email, ipv4, ipv6, host-name
+validators.format.email = function(val) {
+	return /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
+};
+
+validators.type = {};
+validators.type['int'] = function(val) {
+	return ivar.isInt(val);
+};
+
+validators.type['float'] = function(val) {
+	return ivar.isFloat(val);
+};
+
+validators.buildRangeObj = function(val) {
+	if(ivar.isNumber(val)) {
+		return {value:min, exclusive: false};
+	} else if(ivar.isObject(val)) {
+		
+	}
+	return ivar.isNumber(val)?:val;
+};
+
+validators.buildRegExp = function(str) {
+	
+};
 
 function InputField(o) {
 	this.elem = null;
