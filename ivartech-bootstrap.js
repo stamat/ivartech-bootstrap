@@ -9,10 +9,9 @@
 ivar.formAgregator = {};
 
 $(document).ready(function() {
-	console.log(validate.email('markobre1@a.gmail.info'));
 	initInputs($('.ivartech-input'));
 	
-	validators.regex('','/ab+c/');
+	console.log(validateNumber(6, numberSchema));
 });
 
 var schema = {
@@ -150,8 +149,10 @@ Input.prototype.buildActionHandlerSlots = function(action_names) {
 	});
 }
 
-//int,float,array,string,bool
-var numberSchema = {
+var numberSchemaTemplate = {
+		'required': false,
+		'default': null,
+		
 		'min': {
 			value: 0,
 			exclusive: false
@@ -161,21 +162,56 @@ var numberSchema = {
 			exclusive: false
 		},
 		'regex': null, //sting,int,float
-		'required': false,
 
 		//---- other ---//
-		'default': null,
-		'format': '', //string
-		'unique': false, //array
 		'enum': ['happyness', 'joy', '1.34'],
 		'devisableBy': null //number
 }
 
+//int,float,array,string,bool
+var numberSchema = {
+		'type': 'number',
+		'required': false,
+		'default': null,
+		
+		'min': {
+			value: 0,
+			exclusive: false
+		},
+		'max': {
+			value: 8,
+			exclusive: false
+		},
+		'regex': 6, //sting,int,float
+
+		//---- other ---//
+		'enum': [2, 6, 4],
+		'dividableBy': 3 //number
+}
+
 function validateNumber(value, schema) {
+	if(schema.hasOwnProperty('enum') && ivar.isArray(schema['enum']))
+		schema['enum'] = ivar.mapArray(schema['enum']);
+		
 	
+	console.log(ivar.whatis(schema['enum']));
+		
+	for(var i in schema) {
+		if(schema[i] && validators[i]) {
+				console.log(i+': '+validators[i](value, schema[i]));
+				if(!validators[i](value, schema[i])) {
+					return false;
+				}
+		}
+	}
+	return true;
 }
 
 var validators = {};
+
+validators.required = function(value) {
+	return ivar.isSet(value);
+}
 
 validators['enum'] = function(value, enumobj) {
 	if(ivar.isNumber(value))
@@ -185,20 +221,24 @@ validators['enum'] = function(value, enumobj) {
 
 validators.min = function(value, min) {
 	min = validators.buildRangeObj(min);
-	return min.exclusive?min.value>value:min.value>=value; 
+	return min.exclusive?min.value<value:min.value<=value; 
 };
 
 validators.max = function(value, max) {
 	max = validators.buildRangeObj(max);
-	return max.exclusive?max.value<value:max.value<=value; 
+	return max.exclusive?max.value>value:max.value>=value; 
 };
 
 validators.regex = function(value, regex) {
-	var li = regex.lastIndexOf('/');
-	var patt = regex.substring(regex.indexOf('/')+1, li);
-	var opt = regex.substring(li+1, regex.length);
-	var re = new RegExp(patt, opt);
-	return re.test(value);
+	if(!isString(value))
+		value = value.toString();
+	if(!(regex instanceof RegExp))
+		regex = validators.buildRegExp(regex);	
+	return regex.test(value);
+}
+
+validators.dividableBy = function(value, num) {
+	return value%num === 0;
 }
 
 validators.format = {}; //date-time YYYY-MM-DDThh:mm:ssZ, date YYYY-MM-DD, time hh:mm:ss, utc-milisec, regex, color, style, phone E.123, uri, url, email, ipv4, ipv6, host-name
@@ -206,26 +246,34 @@ validators.format.email = function(val) {
 	return /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
 };
 
-validators.type = {};
-validators.type['int'] = function(val) {
-	return ivar.isInt(val);
-};
-
-validators.type['float'] = function(val) {
-	return ivar.isFloat(val);
+validators.type = function(value, type) {
+	return ivar.is(value, type);
 };
 
 validators.buildRangeObj = function(val) {
 	if(ivar.isNumber(val)) {
-		return {value:min, exclusive: false};
+		//return {value:min, exclusive: false};
 	} else if(ivar.isObject(val)) {
 		
 	}
-	return ivar.isNumber(val)?:val;
+	return ivar.isNumber(val)?{value:min, exclusive: false}:val;
 };
 
-validators.buildRegExp = function(str) {
-	
+validators.buildRegExp = function(val) {
+	if(!isString(val))
+		val = val.toString();
+	if(/^[^\/]*[^\/]$/.test(val))
+		val = '/'+val+'/';
+	var pts = /^\/(.*)\/([igmy]{0,4})$/.exec(val);
+	try {
+		return new RegExp(pts[1], pts[2]);
+	} catch (e) {
+		validators.error('Malformed RegExp string. '+e);
+	}
+};
+
+validators.error = function(msg) {
+	ivar.error(msg);
 };
 
 function InputField(o) {
