@@ -11,8 +11,144 @@ ivar.formAgregator = {};
 $(document).ready(function() {
 	console.log(validate.email('markobre1@a.gmail.info'));
 	initInputs($('.ivartech-input'));
+	
+	console.log(new Input());
 });
 
+var schema = {
+	name: '',
+	type: 'text', //text, textarea, checkbox, multicheckbox, select, button
+	
+	form: null,
+	
+	state: {
+		// normal, error, tip, warn, valid, info, load
+		'default': 'normal',
+		'message': {
+			'tip': '',
+			'info': '',
+			'warn': '',
+			'load': '',
+			'valid': '',
+			'error': ''
+		}
+	},
+	
+	validation: {
+		'type': 'string', //int,float,array,string,bool
+		'min': {
+			value: 0,
+			exclusive: false
+		},
+		'max': {
+			value: null,
+			exclusive: false
+		},
+		'regexp': null, //sting,int,float
+		'required': false,
+
+		//---- other ---//
+		'default': null,
+		'format': '', //string
+		'unique': false, //array
+		'enum': ['happyness', 'joy', '1.34'],
+		'devisableBy': null //number
+	}
+};
+
+function Input(schema, target) {
+	
+	this.name = '';
+	this.type = 'text'; //text, textarea, checkbox, multicheckbox, select, button
+	this.form = null;
+	this.value = null;
+	
+	this.elem = null; //html elem
+	this.classes = '';
+	
+	this.parsing_functions = [];
+	
+	this.state = {
+		'current': 'normal', // normal, error, tip, warn, valid, info, load
+		'default': 'normal',
+		'message': {
+			'tip': '',
+			'info': '',
+			'warm': '',
+			'load': '',
+			'valid': '',
+			'error': ''
+		}
+	};
+	
+	this.validation = {
+		'type': 'string', //int,float,array,string,bool
+		'min': {
+			value: 0,
+			exclusive: false
+		},
+		'max': {
+			value: 0,
+			exclusive: false
+		},
+		'regexp': null, //sting
+		'required': false,
+		
+		//---- other ---//
+		'default': null,
+		'format': '', //string
+		'unique': false, //array
+		'enum': {
+			'happyness':0,
+			'joy':0,
+			'true':0,
+			'1.34':0,
+		}
+	};
+	
+	this.actions = [
+		'mousedown',
+		'mouseup',
+		'mousemove',
+		'mouseenter',
+		'mouseleave',
+		'focus',
+		'blur',
+		'keypress',
+		'keyup',
+		'keydown'
+	];
+	
+	this.buildActionHandlerSlots(this.actions);
+	
+	this.events = ['error','valid','loading','loaded','warn','info'];
+	//TODO: bind events
+	
+	this.parseSchema(schema);
+}
+
+Input.prototype.parseSchema = function(schema) {
+	if(schema.validation.hasOwnProperty('enum'))
+		this.validation['enum'] = ivar.mapArray(schema.validation['enum']);
+	//...
+};
+
+Input.prototype.enumCheck = function(value) {
+	if(isNumber(value))
+		value = value.toString();
+	return this.validation.hasOwnProperty(value);
+};
+
+Input.prototype.buildActionHandlerSlots = function(action_names) {
+	var self = this;
+	ivar.loop(action_names.length, function(i){
+		self[action_names[i]] = function(fn) {
+			$(self.elem).bind(action_names[i], function(e){
+				fn(self, e);
+			});
+		}
+	});
+}
 
 function InputField(o) {
 	this.elem = null;
@@ -24,9 +160,10 @@ function InputField(o) {
 	this.regex = null;
 	this.mandatory = false;
 	
+	this.valfn = null;
+	
 	this.skip_validation = false;
 	this.form = null;
-	this.valfn = null;
 	this.classes = '';
 	
 	this.info_msg = null;
