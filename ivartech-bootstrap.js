@@ -11,7 +11,7 @@ ivar.formAgregator = {};
 $(document).ready(function() {
 	initInputs($('.ivartech-input'));
 	
-	console.log(validateSchema('stamatron@gmail.com', schema));
+	console.log(validateSchema(['foo','bar','baz','foo'], schema));
 });
 
 var schema = {
@@ -171,7 +171,7 @@ var numberSchemaTemplate = {
 
 //int,float,array,string,bool
 var schema = {
-		'type': 'string', //TODO: type can be array of types??? or not needed
+		'type': 'array', //TODO: type can be array of types??? or not needed
 		'required': false,
 		'default': null,
 		
@@ -183,10 +183,12 @@ var schema = {
 			value: 30,
 			exclusive: false
 		},
-		//'regex': 6, //sting,int,float
-		'format': 'email',
 		
-		'disallow': ['stamatron@gmail.com']
+		'unique': true
+		//'regex': 6, //sting,int,float
+		//'format': 'email',
+		
+		//'disallow': ['stamatron@gmail.com']
 
 		//---- other ---//
 		//'allow': ['lol6zors', 6, 4],
@@ -218,16 +220,27 @@ validators.required = function(value) {
 	return ivar.isSet(value);
 }
 
-validators['allow'] = function(value, enumobj) {
+validators.allow = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return enumobj.hasOwnProperty(value);
 };
 
-validators['disallow'] = function(value, enumobj) {
+validators.disallow = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return !enumobj.hasOwnProperty(value);
+};
+
+validators.unique = function(value) {
+	var aggr = {};
+	for(var i = 0; i < value.length; i++) {
+		if(!aggr.hasOwnProperty(value[i]))
+			aggr[''+value[i]] = 1;
+		else
+			return false;
+	}
+	return true;
 };
 
 validators.min = function(value, min) {
