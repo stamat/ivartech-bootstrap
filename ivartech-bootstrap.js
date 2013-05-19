@@ -164,14 +164,15 @@ var numberSchemaTemplate = {
 		'regex': null, //sting,int,float
 
 		//---- other ---//
-		'allow': ['happyness', 'joy', '1.34'], //!!! enum renamed into allow
-		'disallow': ['sadness'],
+		'only': ['happyness', 'joy', '1.34'], //!!! enum renamed into only
+		'forbidden': ['sadness'],
 		'devisableBy': null //number
 }
 
-//int,float,array,string,bool
+//int,float,number,array,string,bool,object
 var schema = {
 		'type': 'array', //TODO: type can be array of types??? or not needed
+		//'disallow': 'int' //disallowed types, can be array
 		'required': false,
 		'default': null,
 		
@@ -184,22 +185,25 @@ var schema = {
 			exclusive: false
 		},
 		
-		'unique': true
+		'unique': true //if array items must be unique
 		//'regex': 6, //sting,int,float
-		//'format': 'email',
+		//'format': 'email', //can be array
 		
-		//'disallow': ['stamatron@gmail.com']
+		//'forbidden': ['stamatron@gmail.com'] // true for object id no properties allowed
 
 		//---- other ---//
-		//'allow': ['lol6zors', 6, 4],
+		//'only': ['lol6zors', 6, 4], //true for object if you want selected properties in properties property of schema to be only ones allowed
 		//'dividableBy': 3 //number
+		//items: [{schema}] Schemas for an item!
+		//uniqueProperties: []  //not Unique ITEMS!!! unique items dont have sense
+		//properties: {propertyName:schema...} //object
 }
 
 function validateSchema(value, schema) {
-	if(schema.hasOwnProperty('allow') && ivar.isArray(schema['allow']))
-		schema['allow'] = ivar.mapArray(schema['allow']);
-	if(schema.hasOwnProperty('disallow') && ivar.isArray(schema['disallow']))
-		schema['disallow'] = ivar.mapArray(schema['disallow']);
+	if(schema.hasOwnProperty('only') && ivar.isArray(schema['only']))
+		schema['only'] = ivar.mapArray(schema['only']);
+	if(schema.hasOwnProperty('forbidden') && ivar.isArray(schema['forbidden']))
+		schema['forbidden'] = ivar.mapArray(schema['forbidden']);
 	
 	//console.log(ivar.whatis(schema['enum']));
 		
@@ -220,13 +224,13 @@ validators.required = function(value) {
 	return ivar.isSet(value);
 }
 
-validators.allow = function(value, enumobj) {
+validators.only = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return enumobj.hasOwnProperty(value);
 };
 
-validators.disallow = function(value, enumobj) {
+validators.forbidden = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return !enumobj.hasOwnProperty(value);
