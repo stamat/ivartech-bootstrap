@@ -11,7 +11,7 @@ ivar.formAgregator = {};
 $(document).ready(function() {
 	initInputs($('.ivartech-input'));
 	
-	console.log(validateSchema(['foo','bar','baz','foo'], schema));
+	console.log(jsonv.validate(['foo','bar','baz'], schema));
 });
 
 var schema = {
@@ -171,6 +171,7 @@ var numberSchemaTemplate = {
 
 //int,float,number,array,string,bool,object
 var schema = {
+		'strict':true,
 		'type': 'array', //TODO: type can be array of types??? or not needed
 		//'disallow': 'int' //disallowed types, can be array
 		'required': false,
@@ -185,7 +186,7 @@ var schema = {
 			exclusive: false
 		},
 		
-		'unique': true //if array items must be unique
+		'unique': true //if array items must be unique 	//uniqueProperties: []  //not Unique ITEMS!!! unique items dont have sense
 		//'regex': 6, //sting,int,float
 		//'format': 'email', //can be array
 		
@@ -195,48 +196,60 @@ var schema = {
 		//'only': ['lol6zors', 6, 4], //true for object if you want selected properties in properties property of schema to be only ones allowed
 		//'dividableBy': 3 //number
 		//items: [{schema}] Schemas for an item!
-		//uniqueProperties: []  //not Unique ITEMS!!! unique items dont have sense
 		//properties: {propertyName:schema...} //object
 }
 
-function validateSchema(value, schema) {
+var jsonv = {};
+
+jsonv.aggregateErrors = true;
+jsonv.errors = [];
+jsonv.errorMessages = {};
+jsonv.errorMessages['type'] = 'Invalid type. Type of data should be {{schema}}';
+
+jsonv.validate = function validate(value, schema) {
 	if(schema.hasOwnProperty('only') && ivar.isArray(schema['only']))
 		schema['only'] = ivar.mapArray(schema['only']);
 	if(schema.hasOwnProperty('forbidden') && ivar.isArray(schema['forbidden']))
 		schema['forbidden'] = ivar.mapArray(schema['forbidden']);
 	
+	jsonv.errors = [];
 	//console.log(ivar.whatis(schema['enum']));
 		
 	for(var i in schema) {
-		if(schema[i] && validators[i]) {
-			console.log(i+': '+validators[i](value, schema[i]));
-			if(!validators[i](value, schema[i])) {
-				return false;
+		if(schema[i] && jsonv.validator[i]) {
+			console.log(i+': '+jsonv.validator[i](value, schema[i]));
+			if(!jsonv.validator[i](value, schema[i])) {
+				jsonv.errors.push(jsonv.errorMessages[i]?jsonv.errorMessages[i].templater({value: value.toString(), schema: schema[i].toString()}):'[error] '+i+': '+schema[i].toString()+' -> ' + value.toString()); //TODO: this to string wont do object, use JSON.stringify()
+				if(!jsonv.aggregateErrors)
+					return false;
 			}
 		}
 	}
+	
+	if(jsonv.aggregateErrors && jsonv.errors.length > 0)
+		return false;
 	return true;
 }
 
-var validators = {};
+jsonv.validator = {};
 
-validators.required = function(value) {
+jsonv.validator.required = function(value) {
 	return ivar.isSet(value);
 }
 
-validators.only = function(value, enumobj) {
+jsonv.validator.only = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return enumobj.hasOwnProperty(value);
 };
 
-validators.forbidden = function(value, enumobj) {
+jsonv.validator.forbidden = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
 	return !enumobj.hasOwnProperty(value);
 };
 
-validators.unique = function(value) {
+jsonv.validator.unique = function(value) {
 	var aggr = {};
 	for(var i = 0; i < value.length; i++) {
 		if(!aggr.hasOwnProperty(value[i]))
@@ -247,70 +260,72 @@ validators.unique = function(value) {
 	return true;
 };
 
-validators.min = function(value, min) {
+jsonv.validator.min = function(value, min) {
 	if(value.hasOwnProperty('length'))
 		value = value.length;
-	min = validators.buildRangeObj(min);
+	min = jsonv.utils.buildRangeObj(min);
 	return min.exclusive?min.value<value:min.value<=value; 
 };
 
-validators.max = function(value, max) {
+jsonv.validator.max = function(value, max) {
 	if(value.hasOwnProperty('length'))
 		value = value.length;
-	max = validators.buildRangeObj(max);
+	max = jsonv.utils.buildRangeObj(max);
 	return max.exclusive?max.value>value:max.value>=value; 
 };
 
-validators.regex = function(value, regex) {
+jsonv.validator.regex = function(value, regex) {
 	if(!isString(value))
 		value = value.toString();
 	if(!(regex instanceof RegExp))
-		regex = validators.buildRegExp(regex);	
+		regex = jsonv.utils.buildRegExp(regex);	
 	return regex.test(value);
 }
 
-validators.dividableBy = function(value, num) {
+jsonv.validator.dividableBy = function(value, num) {
 	return value%num === 0;
 }
 
-formats = {}; //date-time YYYY-MM-DDThh:mm:ssZ, date YYYY-MM-DD, time hh:mm:ss, utc-milisec, regex, color, style, phone E.123, uri, url, email, ipv4, ipv6, host-name
-formats.email = function(val) {
-	return /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/.test(val);
+jsonv.formats = {}; //date-time YYYY-MM-DDThh:mm:ssZ, date YYYY-MM-DD, time hh:mm:ss, utc-milisec, regex, color, style, phone E.123, uri, url, email, ipv4, ipv6, host-name
+jsonv.formats.email = function(val) {
+	return ivar.regex.email.test(val);
 };
 
-validators.format = function(value, format) {
-	return formats[format](value);
+jsonv.validator.format = function(value, format) {
+	return jsonv.formats[format](value);
 };
 
-validators.type = function(value, type) {
+jsonv.validator.type = function(value, type) {
 	return ivar.is(value, type);
 };
 
-validators.buildRangeObj = function(val) {
-	if(ivar.isNumber(val)) {
-		//return {value:val, exclusive: false};
-	} else if(ivar.isObject(val)) {
-		
-	}
+jsonv.utils = {};
+
+jsonv.utils.buildRangeObj = function(val) {
 	return ivar.isNumber(val)?{value:val, exclusive: false}:val;
 };
 
-validators.buildRegExp = function(val) {
+jsonv.utils.buildRegExp = function(val) {
 	if(!isString(val))
 		val = val.toString();
 	if(/^[^\/]*[^\/]$/.test(val))
 		val = '/'+val+'/';
-	var pts = /^\/(.*)\/([igmy]{0,4})$/.exec(val);
+	var pts = ivar.regex.regex.exec(val);
 	try {
 		return new RegExp(pts[1], pts[2]);
 	} catch (e) {
-		validators.error('Malformed RegExp string. '+e);
+		jsonv.error('Malformed RegExp string. '+e);
 	}
 };
 
-validators.error = function(msg) {
+jsonv.error = function(msg) {
 	ivar.error(msg);
 };
+
+ivar.regex = {};
+ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
+ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
+ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
 
 function InputField(o) {
 	this.elem = null;
