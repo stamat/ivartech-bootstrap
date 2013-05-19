@@ -219,6 +219,8 @@ jsonv.validate = function validate(value, schema) {
 		if(schema[i] && jsonv.validator[i]) {
 			console.log(i+': '+jsonv.validator[i](value, schema[i]));
 			if(!jsonv.validator[i](value, schema[i])) {
+				if(ivar.isCustomObject(value))
+					value = JSON.stringify(value);
 				jsonv.errors.push(jsonv.errorMessages[i]?jsonv.errorMessages[i].templater({value: value.toString(), schema: schema[i].toString()}):'[error] '+i+': '+schema[i].toString()+' -> ' + value.toString()); //TODO: this to string wont do object, use JSON.stringify()
 				if(!jsonv.aggregateErrors)
 					return false;
