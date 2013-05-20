@@ -11,7 +11,7 @@ ivar.formAgregator = {};
 $(document).ready(function() {
 	initInputs($('.ivartech-input'));
 	
-	console.log(jsonv.validate(['foo','bar','baz'], schema));
+	console.log(jsonv.validate('foo', schema));
 });
 
 var schema = {
@@ -172,7 +172,7 @@ var numberSchemaTemplate = {
 //int,float,number,array,string,bool,object
 var schema = {
 		'strict':true,
-		'type': 'array', //TODO: type can be array of types??? or not needed
+		'type': 'string', //TODO: type can be array of types??? or not needed
 		//'disallow': 'int' //disallowed types, can be array
 		'required': false,
 		'default': null,
@@ -186,8 +186,8 @@ var schema = {
 			exclusive: false
 		},
 		
-		'unique': true //if array items must be unique 	//uniqueProperties: []  //not Unique ITEMS!!! unique items dont have sense
-		//'regex': 6, //sting,int,float
+		'unique': true, //if array items must be unique 	//uniqueProperties: []  //not Unique ITEMS!!! unique items dont have sense
+		'regex': 'f', //sting,int,float
 		//'format': 'email', //can be array
 		
 		//'forbidden': ['stamatron@gmail.com'] // true for object id no properties allowed
@@ -219,9 +219,7 @@ jsonv.validate = function validate(value, schema) {
 		if(schema[i] && jsonv.validator[i]) {
 			console.log(i+': '+jsonv.validator[i](value, schema[i]));
 			if(!jsonv.validator[i](value, schema[i])) {
-				if(ivar.isCustomObject(value))
-					value = JSON.stringify(value);
-				jsonv.errors.push(jsonv.errorMessages[i]?jsonv.errorMessages[i].templater({value: value.toString(), schema: schema[i].toString()}):'[error] '+i+': '+schema[i].toString()+' -> ' + value.toString()); //TODO: this to string wont do object, use JSON.stringify()
+				jsonv.invalid(i, value, schema[i]);
 				if(!jsonv.aggregateErrors)
 					return false;
 			}
@@ -231,6 +229,19 @@ jsonv.validate = function validate(value, schema) {
 	if(jsonv.aggregateErrors && jsonv.errors.length > 0)
 		return false;
 	return true;
+}
+
+jsonv.invalid = function(field, value, schema, callback) {
+	var val = value.toString();
+	if(ivar.isCustomObject(value))
+		value = JSON.stringify(value);
+	var sch = schema.toString();
+	if(ivar.isCustomObject(schema))
+		sch = JSON.stringify(schema);
+	var message = jsonv.errorMessages[field]?jsonv.errorMessages[field].templater({value: val, schema: sch}):'[error] '+field+': '+sch+' -> ' + val;
+	jsonv.errors.push(message);
+	if(callback && ivar.isFunction(callback))
+		callback(field, value, schema, message);
 }
 
 jsonv.validator = {};
@@ -245,6 +256,8 @@ jsonv.validator.only = function(value, enumobj) {
 	return enumobj.hasOwnProperty(value);
 };
 
+jsonv.validator.enum = jsonv.validator.only;
+ 
 jsonv.validator.forbidden = function(value, enumobj) {
 	if(ivar.isNumber(value))
 		value = value.toString();
@@ -262,18 +275,32 @@ jsonv.validator.unique = function(value) {
 	return true;
 };
 
-jsonv.validator.min = function(value, min) {
+jsonv.validator.min = function(value, min, exclusive) {
 	if(value.hasOwnProperty('length'))
 		value = value.length;
-	min = jsonv.utils.buildRangeObj(min);
+	min = jsonv.utils.buildRangeObj(min, exclusive);
 	return min.exclusive?min.value<value:min.value<=value; 
 };
 
-jsonv.validator.max = function(value, max) {
+jsonv.validator.minimum = jsonv.validator.min;
+jsonv.validator.minItems = jsonv.validator.min;
+
+jsonv.validator.max = function(value, max, exclusive) {
 	if(value.hasOwnProperty('length'))
 		value = value.length;
-	max = jsonv.utils.buildRangeObj(max);
+	max = jsonv.utils.buildRangeObj(max, exclusive);
 	return max.exclusive?max.value>value:max.value>=value; 
+};
+
+jsonv.validator.maximum = jsonv.validator.max;
+jsonv.validator.maxItems = jsonv.validator.max;
+
+jsonv.validator.exclusiveMinimum = function(value, min) {
+	return jsonv.validator.min(value, min, true);
+};
+
+jsonv.validator.exclusiveMinimum = function(value, max) {
+	return jsonv.validator.max(value, max, true);
 };
 
 jsonv.validator.regex = function(value, regex) {
@@ -288,9 +315,19 @@ jsonv.validator.dividableBy = function(value, num) {
 	return value%num === 0;
 }
 
+jsonv.validator.positive = function(value) {
+	return value > 0;
+}
+
+jsonv.validator.positiveInteger = jsonv.validator.positive;
+
 jsonv.formats = {}; //date-time YYYY-MM-DDThh:mm:ssZ, date YYYY-MM-DD, time hh:mm:ss, utc-milisec, regex, color, style, phone E.123, uri, url, email, ipv4, ipv6, host-name
 jsonv.formats.email = function(val) {
 	return ivar.regex.email.test(val);
+};
+
+jsonv.formats.regex = function(val) {
+	return ivar.regex.regex.test(val);
 };
 
 jsonv.validator.format = function(value, format) {
@@ -303,31 +340,27 @@ jsonv.validator.type = function(value, type) {
 
 jsonv.utils = {};
 
-jsonv.utils.buildRangeObj = function(val) {
-	return ivar.isNumber(val)?{value:val, exclusive: false}:val;
+jsonv.utils.buildRangeObj = function(val, exclusive) {
+	if(ivar.isString(val))
+		val = parseFloat(val);
+	if(!ivar.isSet(exclusive))
+		exclusive = false;
+	return ivar.isNumber(val)?{value:val, exclusive: exclusive}:val;
 };
 
 jsonv.utils.buildRegExp = function(val) {
 	if(!isString(val))
 		val = val.toString();
-	if(/^[^\/]*[^\/]$/.test(val))
-		val = '/'+val+'/';
-	var pts = ivar.regex.regex.exec(val);
-	try {
-		return new RegExp(pts[1], pts[2]);
-	} catch (e) {
-		jsonv.error('Malformed RegExp string. '+e);
-	}
+	var re = val.toRegExp();
+	if(re)
+		return re;
+	else
+		jsonv.error('Malformed regexp!');
 };
 
 jsonv.error = function(msg) {
 	ivar.error(msg);
 };
-
-ivar.regex = {};
-ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
-ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
-ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
 
 function InputField(o) {
 	this.elem = null;
